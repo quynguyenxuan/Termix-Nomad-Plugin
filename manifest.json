@@ -1,200 +1,51 @@
 {
-  "id": "docker",
-  "name": "Docker",
-  "version": "1.2.3",
-  "description": "Manage Docker and Podman containers on your hosts over SSH, with logs, stats and a console.",
-  "author": {
-    "name": "Termix"
-  },
+  "id": "nomad",
+  "name": "Nomad",
+  "version": "1.3.1",
+  "description": "Native Nomad workload, cluster, storage and access management in Termix.",
+  "author": { "name": "Local development" },
   "license": "Apache-2.0",
-  "repository": "https://github.com/Termix-SSH/Plugin-Docker",
-  "docs": "https://docs.termix.site/plugins/docker",
-  "video": "https://www.youtube.com/watch?v=uy-FZQ9Nkak",
   "category": "Infrastructure",
-  "icon": "Box",
+  "icon": "Network",
   "features": [
-    "Start, stop, restart, pause and remove containers",
-    "Live CPU, memory, network and disk stats",
-    "Read and download container logs",
-    "Open a shell inside a container",
-    "Works with Docker and Podman",
-    "A containers panel beside any SSH terminal",
-    "Optional stack management for compose projects",
-    "Check images for updates and update containers",
-    "A dashboard card with running and stopped containers on each host"
+    "Connect a Nomad cluster to a Termix host with an encrypted ACL token",
+    "Operate jobs, versions, deployments, evaluations and allocations",
+    "Inspect topology, nodes, servers, services, storage and variables",
+    "Show allocation-scoped Consul service health and a safe link to Consul UI",
+    "Create complete HCL/JSON jobs with syntax/configuration validation, variables and guarded plans",
+    "Debug tasks with live logs, filesystem browsing and authenticated exec",
+    "Administer namespaces and ACLs with separate privileged permissions"
   ],
-  "engine": {
-    "termix": ">=26.10.6",
-    "api": "^1.9"
-  },
-  "capabilities": [
-    "hosts:read",
-    "credentials:use",
-    "ssh:connect",
-    "network:serve",
-    "ui:surface",
-    "events:core",
-    "users:impersonate"
-  ],
-  "provides": [
-    {
-      "service": "docker.containers",
-      "version": "1.0.0",
-      "permission": "docker.use"
-    },
-    {
-      "service": "docker.events",
-      "version": "1.0.0",
-      "permission": "docker.use"
-    }
-  ],
+  "engine": { "termix": ">=26.11.0", "api": "^1.9" },
+  "capabilities": ["hosts:read", "network:outbound", "network:serve", "ui:surface"],
   "contributes": {
     "tabs": [
-      {
-        "id": "docker",
-        "titleKey": "nav.docker",
-        "icon": "Box",
-        "openFrom": ["host-context-menu", "palette"]
-      }
+      { "id": "nomad", "titleKey": "nav.nomad", "icon": "Network", "openFrom": ["rail", "host-context-menu", "palette"] }
     ],
     "permissions": [
-      {
-        "name": "use",
-        "titleKey": "permissions.use.title",
-        "descriptionKey": "permissions.use.description",
-        "defaultRoles": ["admin", "user"]
-      }
+      { "name": "use", "titleKey": "permissions.use.title", "descriptionKey": "permissions.use.description", "defaultRoles": ["admin", "user"] },
+      { "name": "manage", "titleKey": "permissions.manage.title", "descriptionKey": "permissions.manage.description", "defaultRoles": ["admin"] },
+      { "name": "exec", "titleKey": "permissions.exec.title", "descriptionKey": "permissions.exec.description", "defaultRoles": ["admin"] },
+      { "name": "administer", "titleKey": "permissions.administer.title", "descriptionKey": "permissions.administer.description", "defaultRoles": ["admin"] }
     ],
     "settings": {
       "host": {
         "editorGroup": "ssh",
-        "editorOrder": 30,
-        "enableKey": "enableDocker",
+        "editorOrder": 35,
+        "enableKey": "enableNomad",
         "enableLabelKey": "settings.host.enable.label",
         "enableDescriptionKey": "settings.host.enable.description",
         "fields": [
-          {
-            "key": "containerRuntime",
-            "type": "select",
-            "labelKey": "settings.host.containerRuntime.label",
-            "descriptionKey": "settings.host.containerRuntime.description",
-            "requires": "enableDocker",
-            "default": "docker",
-            "options": [
-              {
-                "value": "docker",
-                "labelKey": "settings.host.containerRuntime.docker"
-              },
-              {
-                "value": "podman",
-                "labelKey": "settings.host.containerRuntime.podman"
-              }
-            ]
-          },
-          {
-            "key": "showPanel",
-            "type": "boolean",
-            "labelKey": "settings.host.showPanel.label",
-            "descriptionKey": "settings.host.showPanel.description",
-            "default": true,
-            "requires": "enableDocker"
-          },
-          {
-            "key": "enableStacks",
-            "type": "boolean",
-            "labelKey": "settings.host.enableStacks.label",
-            "descriptionKey": "settings.host.enableStacks.description",
-            "default": false,
-            "requires": "enableDocker"
-          },
-          {
-            "key": "stacksRoot",
-            "type": "string",
-            "labelKey": "settings.host.stacksRoot.label",
-            "descriptionKey": "settings.host.stacksRoot.description",
-            "default": "/opt/stacks",
-            "requires": "enableStacks"
-          }
+          { "key": "address", "type": "string", "labelKey": "settings.host.address.label", "descriptionKey": "settings.host.address.description", "default": "", "requires": "enableNomad" },
+          { "key": "token", "type": "secret", "labelKey": "settings.host.token.label", "descriptionKey": "settings.host.token.description", "requires": "enableNomad" },
+          { "key": "nomadUiUrl", "type": "string", "labelKey": "settings.host.nomadUiUrl.label", "descriptionKey": "settings.host.nomadUiUrl.description", "default": "", "requires": "enableNomad" },
+          { "key": "region", "type": "string", "labelKey": "settings.host.region.label", "default": "global", "requires": "enableNomad" },
+          { "key": "consulAddress", "type": "string", "labelKey": "settings.host.consulAddress.label", "descriptionKey": "settings.host.consulAddress.description", "default": "", "requires": "enableNomad" },
+          { "key": "consulToken", "type": "secret", "labelKey": "settings.host.consulToken.label", "descriptionKey": "settings.host.consulToken.description", "requires": "enableNomad" },
+          { "key": "consulUiUrl", "type": "string", "labelKey": "settings.host.consulUiUrl.label", "descriptionKey": "settings.host.consulUiUrl.description", "default": "", "requires": "enableNomad" }
         ]
-      },
-      "user": [
-        {
-          "key": "companionAutoOpen",
-          "type": "boolean",
-          "labelKey": "settings.user.companionAutoOpen.label",
-          "descriptionKey": "settings.user.companionAutoOpen.description",
-          "default": false
-        },
-        {
-          "key": "companionSide",
-          "type": "select",
-          "labelKey": "settings.user.companionSide.label",
-          "descriptionKey": "settings.user.companionSide.description",
-          "default": "right",
-          "options": [
-            {
-              "value": "right",
-              "labelKey": "settings.user.companionSide.right"
-            },
-            {
-              "value": "left",
-              "labelKey": "settings.user.companionSide.left"
-            },
-            {
-              "value": "bottom",
-              "labelKey": "settings.user.companionSide.bottom"
-            }
-          ]
-        },
-        {
-          "key": "companionSize",
-          "type": "number",
-          "labelKey": "settings.user.companionSize.label",
-          "descriptionKey": "settings.user.companionSize.description",
-          "min": 240,
-          "max": 900,
-          "default": 380
-        },
-        {
-          "key": "companionEdgeButton",
-          "type": "boolean",
-          "labelKey": "settings.user.companionEdgeButton.label",
-          "descriptionKey": "settings.user.companionEdgeButton.description",
-          "default": true
-        }
-      ],
-      "admin": [
-        {
-          "key": "stacksEnabled",
-          "type": "boolean",
-          "labelKey": "settings.admin.stacksEnabled.label",
-          "descriptionKey": "settings.admin.stacksEnabled.description",
-          "default": false
-        }
-      ]
-    },
-    "uiPresets": {
-      "simple": {
-        "viewMode": "list",
-        "containerLayout": "card"
-      },
-      "balanced": {
-        "viewMode": "list",
-        "containerLayout": "card"
-      },
-      "advanced": {
-        "viewMode": "detail",
-        "containerLayout": "table"
       }
-    },
-    "uses": ["homepage.widgets", "terminal.resolveTheme"],
-    "dashboardCards": [
-      {
-        "id": "docker-hosts",
-        "titleKey": "card.title",
-        "icon": "Box"
-      }
-    ]
+    }
   },
   "locales": "locales",
   "platforms": ["linux", "win32", "darwin"]

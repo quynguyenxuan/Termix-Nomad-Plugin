@@ -1,95 +1,33 @@
-// The terminal surfaces need xterm's own stylesheet.
-import "@xterm/xterm/css/xterm.css";
-import { Box } from "lucide-react";
-import type {
-  StandaloneViewProps,
-  TabProps,
-  TermixApp,
-} from "@termix-ssh/plugin-sdk/frontend";
-import { DockerManager } from "./DockerManager";
-import DockerApp from "./DockerApp";
-import { dockerWidget } from "./DockerWidget";
-import { dockerEnabled, toDockerHost, type DockerHostSource } from "./types";
-import { dockerPanelEnabled } from "./types";
-import { DockerCompanion, useDockerCompanionDefaults } from "./DockerCompanion";
-import { DockerHostsCard } from "./DockerHostsCard";
+import { Boxes } from "lucide-react";
+import type { PluginHostRecord, ShellApi, StandaloneViewProps, TabProps, TermixApp } from "@termix-ssh/plugin-sdk/frontend";
+import { NomadHome, NomadManager, nomadEnabled } from "./NomadManager";
 
-function DockerTab({ host, sshHost, label, isVisible }: TabProps) {
-  const record = host ?? (sshHost as DockerHostSource | undefined);
-  return (
-    <DockerManager
-      host={record ? toDockerHost(record) : undefined}
-      title={label}
-      isVisible={isVisible}
-      isTopbarOpen={false}
-      embedded={true}
-    />
-  );
-}
-
-function DockerStandalone({ hostId }: StandaloneViewProps) {
-  return <DockerApp hostId={hostId} />;
-}
 
 export function activate(app: TermixApp): void {
-  // Host actions filter synchronously, so the permission is read once here.
-  let canUse = true;
-  void app.hasPermission("use").then((allowed) => {
-    canUse = allowed;
-  });
-
-  app.registerDashboardCard({
-    id: "docker-hosts",
-    titleKey: "card.title",
-    defaultPanel: "side",
-    defaultHeight: 220,
-    frame: "framed",
-    component: DockerHostsCard,
-  });
-
-  app.registerTab("docker", DockerTab, {
-    icon: Box,
-    titleKey: "nav.docker",
-    requiresHost: true,
-    noHostMessageKey: "docker.noHostSelected",
+  const NomadTab = ({ host }: TabProps) => host ? <NomadManager host={host} transport={app} /> : <NomadHome transport={app} />;
+  const NomadStandalone = ({ hostId }: StandaloneViewProps) => <NomadManager hostId={hostId} transport={app} />;
+  let canUse = false;
+  void app.hasPermission("use").then((allowed) => { canUse = allowed; });
+  const when = (host?: PluginHostRecord) => canUse && nomadEnabled(host);
+  const open = (host: PluginHostRecord, shell: ShellApi) => shell.openTab(host, "nomad");
+  app.registerTab("nomad", NomadTab, {
+    icon: Boxes,
+    titleKey: "nav.nomad",
+    hostless: true,
     persistent: true,
-    activityTypes: ["docker"],
-    standalone: DockerStandalone,
-    preload: () => import("./DockerManager"),
+    standalone: NomadStandalone,
   });
-
-  app.registerCompanion("docker", DockerCompanion, {
-    icon: Box,
-    titleKey: "nav.docker",
-    order: 30,
-    tabTypes: ["terminal"],
-    when: (_tab, host) =>
-      canUse && !!host?.enableSsh && dockerPanelEnabled(host),
-    useDefaults: useDockerCompanionDefaults,
-  });
-
-  app.registerAction("docker.togglePanel", ((_handle: unknown, tab: unknown) =>
-    app.toggleCompanion(tab as never, "docker")) as never);
-  app.registerSlotContribution("tab.menu", {
-    actionId: "docker.togglePanel",
-    titleKey: "nav.togglePanel",
-    icon: Box,
-    kind: "button",
-    order: 6,
-    when: (context) =>
-      (context.tab as { type?: string } | null)?.type === "terminal",
-  });
-
+  app.registerRailItem({ id: "nomad", titleKey: "nav.nomad", icon: Boxes, kind: "tab", group: "tools", permission: "use", simplePreset: true });
   app.registerHostAction({
-    id: "docker",
-    titleKey: "nav.docker",
-    icon: Box,
-    kind: "open",
-    order: 30,
-    tabType: "docker",
-    copyUrlView: "docker",
-    when: (host) => canUse && !!host.enableSsh && dockerEnabled(host),
+    id: "nomad", titleKey: "nav.nomad", icon: Boxes,
+    kind: "open", order: 30, tabType: "nomad", copyUrlView: "nomad", when,
   });
-
-  app.registerExtension("homepage.widgets", dockerWidget);
+  app.registerHostContextMenuItem({
+    id: "nomad.open", titleKey: "nav.nomad", icon: Boxes, when, run: open,
+  });
+  app.registerPaletteEntry({
+    id: "nomad.open", titleKey: "nav.nomad", icon: Boxes,
+    scope: "host", keywords: ["nomad", "jobs", "allocations"], when,
+    run: (shell, host) => { if (host && when(host)) open(host, shell); },
+  });
 }

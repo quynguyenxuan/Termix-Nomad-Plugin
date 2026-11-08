@@ -1,36 +1,24 @@
 import type { Router } from "express";
 import type { PluginContext } from "@termix-ssh/plugin-sdk/backend";
-import { createLogger } from "./helpers.js";
-import { createDockerSessions } from "./sessions.js";
 import { registerRoutes } from "./routes.js";
-import { registerConsole } from "./console.js";
-import { registerServices } from "./services.js";
-import { registerSummary } from "./summary.js";
-import { normalizeImportedHost } from "./host-settings.js";
+import { registerJobOperationsRoutes } from "./job-operations.js";
+import { registerClusterRoutes } from "./cluster-routes.js";
+import { registerAllocationRoutes, registerAllocationSockets } from "./allocation-routes.js";
+import { registerStorageRoutes } from "./storage-routes.js";
+import { registerAdministrationRoutes } from "./administration-routes.js";
+import { registerConsulRoutes } from "./consul-routes.js";
 
-export type {
-  DockerContainerAction,
-  DockerContainerSummary,
-  DockerEvent,
-  DockerEventsV1,
-  DockerServiceV1,
-} from "./services.js";
-
-export async function activate(ctx: PluginContext) {
-  const log = createLogger(ctx.log);
-  const sessions = createDockerSessions(ctx.schedule, log);
-  ctx.disposables.add(() => sessions.closeAll());
-
+export function activate(ctx: PluginContext): void {
   const router = ctx.http.router<Router>();
-  registerRoutes(router, { ctx, sessions, log });
-  registerSummary(router, ctx);
-  registerConsole(ctx, log);
-  registerServices(ctx, log);
-  ctx.registry.provide("docker.hostImportNormalizer", normalizeImportedHost);
-
-  ctx.log.info(
-    "Docker mounted at /plugin-api/docker and /plugin-ws/docker/console",
-  );
+  registerRoutes(router, ctx);
+  registerJobOperationsRoutes(router, ctx);
+  registerClusterRoutes(router, ctx);
+  registerAllocationRoutes(router, ctx);
+  registerStorageRoutes(router, ctx);
+  registerAdministrationRoutes(router, ctx);
+  registerConsulRoutes(router, ctx);
+  registerAllocationSockets(ctx);
+  ctx.log.info("Nomad mounted at /plugin-api/nomad");
 }
 
-export async function deactivate() {}
+export function deactivate(): void {}

@@ -1,4 +1,5 @@
 {
   "extends": "@termix-ssh/plugin-sdk/tsconfig.plugin.json",
+  "compilerOptions": { "lib": ["ES2024", "DOM", "DOM.Iterable"] },
   "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx"]
 }

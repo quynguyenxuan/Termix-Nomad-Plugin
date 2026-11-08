@@ -1,15 +1,16 @@
-# Contributing to Docker
+# Developing the Nomad plugin
 
-## Development
+Use Node 24 and `npm ci --ignore-scripts`.
 
 ```bash
-npm run build      # build into dist/
-npm run test       # run this plugin's tests
-npm run typecheck  # type-check this plugin
-npm run validate   # check manifest.json
-npm run format     # format the code with Prettier
+npm run typecheck
+npm test
+npm run build
+npm run validate
 ```
 
-## Docs
+For a local Termix instance with developer mode enabled, export `TERMIX_SERVER_URL` and `TERMIX_API_KEY` from a private environment file and run `npx termix-plugin dev --once`. Omit `--once` for watch mode. Reload the browser after a frontend update.
 
-The docs for this plugin are in [docs/](docs/) and are published at https://docs.termix.site/plugins/docker. Settings, permissions, services, environment variables and the API reference are made from `manifest.json` and the `@openapi` comments in the code, so keep those up to date instead of writing them by hand. See [writing docs](https://docs.termix.site/develop/docs).
+Backend code lives in `src/backend`; UI code in `src/frontend`. Tests follow the SDK convention in `tests/backend` and `tests/frontend`. Keep the HTTP mappings consistent with the official Nomad Go API, and exercise changes against an isolated real Nomad agent before claiming runtime support. Never use production hosts for smoke jobs.
+
+Preserve host connect authorization, plugin permissions, encrypted token settings, guarded `ctx.fetch`, TLS verification, namespace/region confinement and modify-index enforcement. Do not put credentials in fixtures, errors or documentation. Keep `README.md`, `docs/index.md` and `CHANGELOG.md` aligned with behavior. Push this fork to `origin` (`quynguyenxuan/Termix-Nomad-Plugin`), not the original Docker repository at `upstream`. Registry release automation is not configured.
